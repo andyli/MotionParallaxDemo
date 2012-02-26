@@ -1,0 +1,11 @@
+-swf bin/MotionParallaxDemo.swf
+-swf-version 11.1
+-swf-header 640:480:24:FFFFFF
+-main MotionParallaxDemo
+-cp src
+-swf-lib Away3d-core-fp11.swf
+-lib casalib
+-resource haarcascades/haarcascade_frontalface_alt.xml@haarcascade
+-debug
+
+-cmd open bin/MotionParallaxDemo.swf
