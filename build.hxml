@@ -5,6 +5,7 @@
 -cp src
 -swf-lib Away3d-core-fp11.swf
 -lib casalib
+-lib aswing
 -resource haarcascades/haarcascade_frontalface_alt.xml@haarcascade
 -debug
 

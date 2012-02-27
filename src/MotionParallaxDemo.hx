@@ -14,7 +14,21 @@ import flash.media.Camera;
 import flash.media.Video;
 import jp.maaash.objectdetection.ObjectDetectorOptions;
 import jp.maaash.objectdetection.ObjectDetectorEvent;
+import org.aswing.ASColor;
+import org.aswing.BorderLayout;
+import org.aswing.Container;
+import org.aswing.FrameTitleBar;
+import org.aswing.FlowLayout;
+import org.aswing.SolidBackground;
+import org.aswing.GridLayout;
+import org.aswing.JButton;
+import org.aswing.JWindow;
+import org.aswing.JLabel;
+import org.aswing.JPanel;
+import org.aswing.border.EmptyBorder;
+import org.aswing.geom.IntDimension;
 
+using Std;
 using Lambda;
 using org.casalib.util.ConversionUtil;
 using org.casalib.util.NumberUtil;
@@ -28,6 +42,7 @@ class MotionParallaxDemo extends Sprite {
 	var detector:MyObjectDetector;
 	var bmpTarget:Bitmap;
 	
+	var screenWidth:Float;
 	var headPos:Rectangle;
 	
 	var isDetecting:Bool;
@@ -40,6 +55,22 @@ class MotionParallaxDemo extends Sprite {
     
     function init(event:Event):Void {
     	removeEventListener(Event.ADDED_TO_STAGE, init);
+    	
+    	var win = new JWindow(this);
+    	win.setSize(new IntDimension(stage.stageWidth, stage.stageHeight));
+		
+		var panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+		var label = new JLabel("test0");
+		var button = new JButton("I'm a AsWing button!");
+		panel.append(button);
+		panel.append(label);
+		
+		win.setContentPane(panel);
+		
+    	
+		win.show();
+		
+		return;
     	
 		videoHolder = new Sprite();
 		videoHolder.scaleX = videoHolder.scaleY = 0.5;
@@ -60,6 +91,8 @@ class MotionParallaxDemo extends Sprite {
 		detector.addEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, onDetectionComplete);
 		
 		bmpTarget = new Bitmap(new BitmapData( Std.int(video.width), Std.int(video.height), false));
+		
+		
 
 		addEventListener(Event.ENTER_FRAME, onEnterFrame);
     }
