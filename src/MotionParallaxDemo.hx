@@ -22,6 +22,10 @@ import com.bit101.components.VBox;
 import com.bit101.components.HBox;
 import com.bit101.components.Label;
 import com.bit101.components.Style;
+import away3d.containers.Scene3D;
+import away3d.containers.View3D;
+import away3d.cameras.Camera3D;
+import away3d.cameras.lenses.LensBase;
 
 using Std;
 using Lambda;
@@ -42,12 +46,18 @@ class MotionParallaxDemo extends Sprite {
 	var video:Video;
 	var faceRects:Sprite;
 	var videoHolder:Sprite;
+	
 	var startBtn:PushButton;
 	var screenWidthSlider:HUISlider;
 	var headSizeALabel:Label;
 	var headSizeABtn:PushButton;
 	var headSizeBLabel:Label;
 	var headSizeBBtn:PushButton;
+	
+	var scene3d:Scene3D;
+	var view3d:View3D;
+	var camera3d:Camera3D;
+	var lens:LensBase;
 	
 	var detector:MyObjectDetector;
 	var bmpTarget:Bitmap;
@@ -134,6 +144,11 @@ class MotionParallaxDemo extends Sprite {
 		
 		bmpTarget = new Bitmap(new BitmapData(CAM_W, CAM_H, false));
 		
+		
+		scene3d = new Scene3D();
+		view3d = new View3D();
+		lens = new LensBase();
+		camera3d = new Camera3D(lens);
     	
     	stage.addEventListener(Event.RESIZE, onResize);
     }
