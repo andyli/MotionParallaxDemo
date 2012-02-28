@@ -29,6 +29,7 @@ import away3d.cameras.Camera3D;
 import away3d.cameras.lenses.LensBase;
 import away3d.entities.Mesh;
 import away3d.primitives.CubeGeometry;
+import away3d.materials.ColorMaterial;
 
 using Std;
 using Lambda;
@@ -78,13 +79,19 @@ class MotionParallaxDemo extends Sprite {
     	addEventListener(Event.ADDED_TO_STAGE, init);
     }
     
-    function onResize(evt:Event):Void {
+    function onResize(evt:Event = null):Void {
     	if (stage.displayState != StageDisplayState.FULL_SCREEN) {
     		startBtn.setVisible(true);
     	}
     	
     	videoHolder.x = (stage.stageWidth - CAM_W * videoHolder.scaleX) * 0.5;
     	videoHolder.y = 0;
+    	
+    	view3d.width = stage.stageWidth;
+    	view3d.height = stage.stageHeight;
+    	
+    	startBtn.x = (stage.stageWidth - startBtn.getWidth()) * 0.5;
+    	startBtn.y = (stage.stageHeight - startBtn.getHeight()) * 0.5;
     }
     
     function setHeadSizeA(evt:Event):Void {
@@ -103,12 +110,44 @@ class MotionParallaxDemo extends Sprite {
     
     function init(event:Event):Void {
     	removeEventListener(Event.ADDED_TO_STAGE, init);
+    	
+    	
+    	//init 3d
+		
+		view3d = new View3D();
+		scene3d = view3d.scene;
+		camera3d = view3d.camera;
+		lens = new LensBase();
+		//camera3d.lens = lens;
+		
+		view3d.antiAlias = 4;
+		//view3d.backgroundColor = 0xFFFFFF;
+		
+		var m = new Mesh(new CubeGeometry(10, 10, 10), new ColorMaterial(0xFF0000));
+		for (i in 0...10)
+		for (j in 0...10) 
+		for (k in 0...10) 
+		{
+			m = cast m.clone();
+			m.moveTo(i.map(0, 10, -1000, 1000), j.map(0, 10, -1000, 1000), k.map(0, 10, 0, 1000));
+			scene3d.addChild(m);
+		}
+		
+		addChild(view3d);
+//		addEventListener(Event.ENTER_FRAME, function(evt:Event):Void {
+//	    	view3d.render();
+//	    	m.rotationX++;
+//	    });
+		
    		
-   		var guiBox = new VBox(this, 0, 0);
+   		//init UI
+   		
+   		var guiBox = new VBox(this, 5, 5);
+   		guiBox.graphics.beginFill(0xFFFFFF);
+   		guiBox.graphics.drawRect(0,0,215,65);
+   		guiBox.graphics.endFill();
    		
     	startBtn = new PushButton(this, 0, 0, "start (fullscreen)");
-    	startBtn.x = (stage.stageWidth - startBtn.getWidth()) * 0.5;
-    	startBtn.y = (stage.stageHeight - startBtn.getHeight()) * 0.5;
     	startBtn.addEventListener(MouseEvent.CLICK, start);
     	
     	screenWidthSlider = new HUISlider(guiBox, 0, 0, "screen width");
@@ -129,6 +168,8 @@ class MotionParallaxDemo extends Sprite {
     	headSizeBBtn.setEnabled(false);
     	
     	
+    	//init webcam
+    	
     	videoHolder = new Sprite();
 		videoHolder.scaleX = videoHolder.scaleY = 0.5;
 		addChild(videoHolder);
@@ -140,6 +181,8 @@ class MotionParallaxDemo extends Sprite {
 		videoHolder.addChild(faceRects);
 		
 		
+		//init face dectector
+		
 		detector = new MyObjectDetector();
 		detector.options = getDetectorOptions();
 		detector.loadHaarCascadesFromXml(haxe.Resource.getString("haarcascade"));
@@ -148,17 +191,7 @@ class MotionParallaxDemo extends Sprite {
 		bmpTarget = new Bitmap(new BitmapData(CAM_W, CAM_H, false));
 		
 		
-		view3d = new View3D();
-		scene3d = view3d.scene;
-		camera3d = view3d.camera;
-		lens = new LensBase();
-		//camera3d.lens = lens;
-		
-		var m = new Mesh(new CubeGeometry());
-		scene3d.addChild(m);
-		
-		addChild(view3d);
-    	
+    	onResize();
     	stage.addEventListener(Event.RESIZE, onResize);
     }
     
@@ -177,6 +210,8 @@ class MotionParallaxDemo extends Sprite {
     	if (!isDetecting) {
     		startDetection();
     	}
+    	
+    	view3d.render();
     	
     	/*
     	var mat = new Matrix3D();
