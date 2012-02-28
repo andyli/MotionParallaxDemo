@@ -6,6 +6,7 @@
 -swf-header 640:480:24:FFFFFF
 -main MotionParallaxDemo
 -cp src
+# https://github.com/Beeblerox/MinimalCompsHX/
 -cp ../../repo/MinimalCompsHX/Source
 -swf-lib Away3d-core-fp11.swf
 -lib casalib

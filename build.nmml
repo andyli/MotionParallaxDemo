@@ -8,6 +8,8 @@
 	<set name="BUILD_DIR" value="bin" />
 	
 	<classpath name="src" />
+	
+	<!-- https://github.com/Beeblerox/MinimalCompsHX/ -->
 	<classpath name="../../repo/MinimalCompsHX/Source" />
 	
 	<compilerflag name="-swf-lib Away3d-core-fp11.swf" />
