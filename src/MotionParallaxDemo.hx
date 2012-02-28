@@ -14,19 +14,8 @@ import flash.media.Camera;
 import flash.media.Video;
 import jp.maaash.objectdetection.ObjectDetectorOptions;
 import jp.maaash.objectdetection.ObjectDetectorEvent;
-import org.aswing.ASColor;
-import org.aswing.BorderLayout;
-import org.aswing.Container;
-import org.aswing.FrameTitleBar;
-import org.aswing.FlowLayout;
-import org.aswing.SolidBackground;
-import org.aswing.GridLayout;
-import org.aswing.JButton;
-import org.aswing.JWindow;
-import org.aswing.JLabel;
-import org.aswing.JPanel;
-import org.aswing.border.EmptyBorder;
-import org.aswing.geom.IntDimension;
+import com.bit101.components.PushButton;
+import com.bit101.components.Style;
 
 using Std;
 using Lambda;
@@ -55,20 +44,8 @@ class MotionParallaxDemo extends Sprite {
     
     function init(event:Event):Void {
     	removeEventListener(Event.ADDED_TO_STAGE, init);
-    	
-    	var win = new JWindow(this);
-    	win.setSize(new IntDimension(stage.stageWidth, stage.stageHeight));
-		
-		var panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-		var label = new JLabel("test0");
-		var button = new JButton("I'm a AsWing button!");
-		panel.append(button);
-		panel.append(label);
-		
-		win.setContentPane(panel);
-		
-    	
-		win.show();
+   		
+    	var btn = new PushButton(this, 10, 10, "testing");
 		
 		return;
     	
@@ -146,7 +123,7 @@ class MotionParallaxDemo extends Sprite {
 		return options;
 	}
 	
-	static function main():Void {
+	static public function main():Void {
 		Lib.current.stage.scaleMode = StageScaleMode.NO_SCALE;
 		Lib.current.stage.align = StageAlign.TOP_LEFT;
 		Lib.current.addChild(new MotionParallaxDemo());

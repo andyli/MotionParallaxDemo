@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project>
+	
+	<app title="MotionParallaxDemo" file="MotionParallaxDemo" main="MotionParallaxDemo" version="0.0.1" />
+	
+	<window width="640" height="480" fps="24" resizable="false" />
+ 	
+	<set name="BUILD_DIR" value="bin" />
+	
+	<classpath name="src" />
+	<classpath name="../../repo/MinimalCompsHX/Source" />
+	
+	<compilerflag name="-swf-lib Away3d-core-fp11.swf" />
+	<haxelib name="casalib" />
+	<haxelib name="nme" />
+	<compilerflag name="-resource haarcascades/haarcascade_frontalface_alt.xml@haarcascade" />
+	
+	<assets path="Assets" rename="assets" include="*" exclude="nme.svg" />
+</project>
