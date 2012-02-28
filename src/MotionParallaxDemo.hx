@@ -11,6 +11,7 @@ import flash.events.Event;
 import flash.events.MouseEvent;
 import flash.events.KeyboardEvent;
 import flash.geom.Point;
+import flash.geom.Vector3D;
 import flash.geom.Rectangle;
 import flash.geom.Matrix3D;
 import flash.media.Camera;
@@ -270,4 +271,54 @@ class MotionParallaxDemo extends Sprite {
 		Lib.current.stage.align = StageAlign.TOP_LEFT;
 		Lib.current.addChild(new MotionParallaxDemo());
 	}
+	
+	/*
+	 * Generalized Perspective Projection, Robert Kooima, August 2008, revised June 2009
+	 */
+	static public function generalized_perspective_projection(pa:Vector3D, pb:Vector3D, pc:Vector3D, pe:Vector3D, n:Float, f:Float):Matrix3D {
+    
+	    //Compute an orthonormal basis for the screen.
+	    
+	    var vr = pb.subtract(pa);
+	    vr.normalize();
+	    
+	    var vu = pc.subtract(pa);
+	    vu.normalize();
+	    
+	    var vn = vr.crossProduct(vu);
+	    vn.normalize();
+	    
+	    //Compute the screen corner vectors.
+	    
+	    var va = pa.subtract(pe);
+	    var vb = pb.subtract(pe);
+	    var vc = pc.subtract(pe);
+	    
+	    //Find the distance from the eye to screen plane.
+	    
+	    var d = -(va.dotProduct(vn));
+	    
+	    //Find the extent of the perpendicular projection.
+	    
+	    var m = n / d;
+	    
+	    var l = vr.dotProduct(va) * m;
+	    var r = vr.dotProduct(vb) * m;
+	    var b = vu.dotProduct(va) * m;
+	    var t = vu.dotProduct(vc) * m;
+	    
+	    //Load the perpendicular projection.
+	    //glFrustum(l, r, b, t, n, f);
+	    var mat = new Matrix3D(flash.Vector.ofArray([2.0*n/(r-l), 0, (r+l)/(r-l), 0, 0, 2.0*n/(t-b), (t+b)/(t-b), 0, 0, 0, (f+n)/(n-f), 2.0*f*n/(n-f), 0, 0, -1, 0]));
+	    
+	    //Rotate the projection to be non-perpendicular.
+	    
+	    mat.append(new Matrix3D(flash.Vector.ofArray([vr.x, vr.y, vr.z, 0, vu.x, vu.y, vu.z, 0, vn.x, vn.y, vn.z, 0, 0, 0, 0, 1])));
+	    
+	    //Move the apex of the frustum to the origin.
+	    
+	    mat.append(new Matrix3D(flash.Vector.ofArray([1, 0, 0, -pe.x, 0, 1, 0, -pe.y, 0, 0, 1, -pe.z, 0, 0, 0, 1])));
+	    
+	    return mat;
+    }
 }
