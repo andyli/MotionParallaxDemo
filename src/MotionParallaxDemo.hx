@@ -12,6 +12,7 @@ import flash.events.MouseEvent;
 import flash.events.KeyboardEvent;
 import flash.geom.Point;
 import flash.geom.Rectangle;
+import flash.geom.Matrix3D;
 import flash.media.Camera;
 import flash.media.Video;
 import jp.maaash.objectdetection.ObjectDetectorOptions;
@@ -26,6 +27,8 @@ import away3d.containers.Scene3D;
 import away3d.containers.View3D;
 import away3d.cameras.Camera3D;
 import away3d.cameras.lenses.LensBase;
+import away3d.entities.Mesh;
+import away3d.primitives.CubeGeometry;
 
 using Std;
 using Lambda;
@@ -145,10 +148,16 @@ class MotionParallaxDemo extends Sprite {
 		bmpTarget = new Bitmap(new BitmapData(CAM_W, CAM_H, false));
 		
 		
-		scene3d = new Scene3D();
 		view3d = new View3D();
+		scene3d = view3d.scene;
+		camera3d = view3d.camera;
 		lens = new LensBase();
-		camera3d = new Camera3D(lens);
+		//camera3d.lens = lens;
+		
+		var m = new Mesh(new CubeGeometry());
+		scene3d.addChild(m);
+		
+		addChild(view3d);
     	
     	stage.addEventListener(Event.RESIZE, onResize);
     }
@@ -168,6 +177,11 @@ class MotionParallaxDemo extends Sprite {
     	if (!isDetecting) {
     		startDetection();
     	}
+    	
+    	/*
+    	var mat = new Matrix3D();
+		Reflect.setField(lens, "_matrix", mat);
+		*/
     }
     
     function onDetectionComplete(e:ObjectDetectorEvent):Void {
