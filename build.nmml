@@ -15,5 +15,5 @@
 	<haxelib name="nme" />
 	<compilerflag name="-resource haarcascades/haarcascade_frontalface_alt.xml@haarcascade" />
 	
-	<assets path="Assets" rename="assets" include="*" exclude="nme.svg" />
+	<assets path="assets" rename="assets" include="*" />
 </project>
