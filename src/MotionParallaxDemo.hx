@@ -66,13 +66,12 @@ class MotionParallaxDemo extends Sprite {
 	
 	var detector:MyObjectDetector;
 	var bmpTarget:Bitmap;
+	var isDetecting:Bool;
 	
 	var screenWidth:Float;
 	var headSizeA:Float;
 	var headSizeB:Float;
 	var headPos:Rectangle;
-	
-	var isDetecting:Bool;
 	
     function new():Void {
     	super();
@@ -298,7 +297,8 @@ class MotionParallaxDemo extends Sprite {
 	}
 	
 	/*
-	 * Generalized Perspective Projection, Robert Kooima, August 2008, revised June 2009
+	 * Generalized Perspective Projection
+	 * Robert Kooima, August 2008, revised June 2009
 	 */
 	static public function generalized_perspective_projection(pa:Vector3D, pb:Vector3D, pc:Vector3D, pe:Vector3D, n:Float, f:Float):Matrix3D {
     
