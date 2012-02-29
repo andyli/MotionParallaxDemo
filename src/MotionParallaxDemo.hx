@@ -54,6 +54,7 @@ class MotionParallaxDemo extends Sprite {
 	
 	var startBtn:PushButton;
 	var screenWidthSlider:HUISlider;
+	var headSizeSlider:HUISlider;
 	var headSizeALabel:Label;
 	var headSizeABtn:PushButton;
 	var headSizeBLabel:Label;
@@ -69,9 +70,11 @@ class MotionParallaxDemo extends Sprite {
 	var isDetecting:Bool;
 	
 	var screenWidth:Float;
+	var headSize:Float;
 	var headSizeA:Float;
 	var headSizeB:Float;
 	var headPos:Rectangle;
+	var headPos3d:Vector3D;
 	
     function new():Void {
     	super();
@@ -98,18 +101,22 @@ class MotionParallaxDemo extends Sprite {
     	if (!headSizeABtn.enabled) return;
     	
     	headSizeA = (headPos.width + headPos.height) * 0.5;
-    	headSizeALabel.setText(HS_A_TEXT + headSizeA.int());
+    	headSizeALabel.setText(HS_A_TEXT + headSizeA.int() + "px");
     }
     
     function setHeadSizeB(evt:Event = null):Void {
     	if (!headSizeBBtn.enabled) return;
     	
     	headSizeB = (headPos.width + headPos.height) * 0.5;
-    	headSizeBLabel.setText(HS_B_TEXT + headSizeB.int());
+    	headSizeBLabel.setText(HS_B_TEXT + headSizeB.int() + "px");
     }
     
     function setSceenWidth(evt:Event = null):Void {
     	screenWidth = screenWidthSlider.value;
+    }
+    
+    function setHeadSize(evt:Event = null):Void {
+    	headSize = headSizeSlider.value;
     }
     
     function init(event:Event):Void {
@@ -127,15 +134,22 @@ class MotionParallaxDemo extends Sprite {
 		
 		view3d.antiAlias = 4;
 		
+		headPos3d = new Vector3D();
+		headSizeA = 102;
+		headSizeB = 71;
+		
 		var size = 0.1;
-		var m = new Mesh(new CubeGeometry(size, size, size), new ColorMaterial(0xFF0000));
-		for (i in 0...10)
-		for (j in 0...10) 
-		for (k in 0...10) 
-		{
-			m = cast m.clone();
-			m.moveTo(i.map(0, 10, -2, 2), j.map(0, 10, -2, 2), k.map(0, 10, 0, 2));
-			scene3d.addChild(m);
+		var geom = new CubeGeometry(0.001, 0.001, size);
+		var m;
+		for (k in 0...10) {
+			var material = new ColorMaterial(0xFF0000, k.map(0, 10, 1, 0));
+			for (i in 0...10)
+			for (j in 0...10) 
+			{
+				m = new Mesh(geom, material);
+				m.moveTo(i.map(0, 10, -2, 2), j.map(0, 10, -2, 2), k.map(0, 10, 0, -2));
+				scene3d.addChild(m);
+			}
 		}
 		
 		addChild(view3d);
@@ -143,10 +157,7 @@ class MotionParallaxDemo extends Sprite {
    		
    		//init UI
    		
-   		var guiBox = new VBox(this, 5, 5);
-   		guiBox.graphics.beginFill(0xFFFFFF);
-   		guiBox.graphics.drawRect(0,0,215,65);
-   		guiBox.graphics.endFill();
+   		var guiBox = new MyVBox(this, 5, 5);
    		
     	startBtn = new PushButton(this, 0, 0, "start (fullscreen)");
     	startBtn.addEventListener(MouseEvent.CLICK, start);
@@ -157,16 +168,22 @@ class MotionParallaxDemo extends Sprite {
     	screenWidthSlider.setValue(1.5);
     	setSceenWidth();
     	
+    	headSizeSlider = new HUISlider(guiBox, 0, 0, "head size", setHeadSize);
+    	headSizeSlider.setMinimum(0.1);
+    	headSizeSlider.setMaximum(2);
+    	headSizeSlider.setValue(0.8);
+    	setHeadSize();
+    	
     	var hsA = new HBox(guiBox);
     	headSizeALabel = new Label(hsA, 0, 0, HS_A_TEXT);
-    	headSizeABtn = new PushButton(hsA, 0, 0, "set from camera", setHeadSizeA);
-    	headSizeABtn.setSize(100, 18);
+    	headSizeABtn = new PushButton(hsA, 0, 0, "get", setHeadSizeA);
+    	headSizeABtn.setSize(30, 18);
     	headSizeABtn.setEnabled(false);
     	
     	var hsB = new HBox(guiBox);
     	headSizeBLabel = new Label(hsB, 0, 0, HS_B_TEXT);
-    	headSizeBBtn = new PushButton(hsB, 0, 0, "set from camera", setHeadSizeB);
-    	headSizeBBtn.setSize(100, 18);
+    	headSizeBBtn = new PushButton(hsB, 0, 0, "get", setHeadSizeB);
+    	headSizeBBtn.setSize(30, 18);
     	headSizeBBtn.setEnabled(false);
     	
     	
@@ -216,16 +233,25 @@ class MotionParallaxDemo extends Sprite {
     	var screenHeight = screenWidth*stage.stageHeight/stage.stageWidth;
     	
     	//screen's bottom left corner
-    	var pa = new Vector3D(0, 0, 0);
+    	var pa = new Vector3D(-screenWidth*0.5, -screenHeight*0.5, 0);
     	
     	//screen's bottom right corner
-    	var pb = new Vector3D(screenWidth, 0, 0);
+    	var pb = new Vector3D(screenWidth*0.5, -screenHeight*0.5, 0);
     	
     	//screen's top left corner
-    	var pc = new Vector3D(0, screenHeight, 0);
+    	var pc = new Vector3D(-screenWidth*0.5, screenHeight*0.5, 0);
     	
     	//head position
-    	var pe = new Vector3D(screenWidth*0.5, screenHeight*0.5, 10);
+    	var pe = if (headPos == null || Math.isNaN(headSizeA) || Math.isNaN(headSizeB)) {
+    		new Vector3D(screenWidth*0.5, screenHeight*0.5, 10);
+    	} else {
+    		var headSizeCur = (headPos.width + headPos.height) * 0.5;
+    		headPos3d.z = (headSizeA*HS_A_DIST + headSizeB*HS_B_DIST)*0.5 / headSizeCur;
+    		var headPosCenter = new Point(headPos.x + headPos.width * 0.5 - CAM_W * 0.5, headPos.y + headPos.height * 0.5 - CAM_H * 0.5);
+    		headPos3d.x = -headPosCenter.x * headSize/headSizeCur;
+    		headPos3d.y = -headPosCenter.y * headSize/headSizeCur;
+    		headPos3d;
+    	}
     	
     	//near clipping plane
     	var n = 0.01;
