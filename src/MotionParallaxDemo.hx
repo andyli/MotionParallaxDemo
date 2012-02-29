@@ -27,7 +27,7 @@ import com.bit101.components.Style;
 import away3d.containers.Scene3D;
 import away3d.containers.View3D;
 import away3d.cameras.Camera3D;
-import away3d.cameras.lenses.LensBase;
+import away3d.cameras.lenses.FreeMatrixLens;
 import away3d.entities.Mesh;
 import away3d.primitives.CubeGeometry;
 import away3d.materials.ColorMaterial;
@@ -62,7 +62,7 @@ class MotionParallaxDemo extends Sprite {
 	var scene3d:Scene3D;
 	var view3d:View3D;
 	var camera3d:Camera3D;
-	var lens:LensBase;
+	var lens:FreeMatrixLens;
 	
 	var detector:MyObjectDetector;
 	var bmpTarget:Bitmap;
@@ -95,18 +95,22 @@ class MotionParallaxDemo extends Sprite {
     	startBtn.y = (stage.stageHeight - startBtn.getHeight()) * 0.5;
     }
     
-    function setHeadSizeA(evt:Event):Void {
+    function setHeadSizeA(evt:Event = null):Void {
     	if (!headSizeABtn.enabled) return;
     	
     	headSizeA = (headPos.width + headPos.height) * 0.5;
     	headSizeALabel.setText(HS_A_TEXT + headSizeA.int());
     }
     
-    function setHeadSizeB(evt:Event):Void {
+    function setHeadSizeB(evt:Event = null):Void {
     	if (!headSizeBBtn.enabled) return;
     	
     	headSizeB = (headPos.width + headPos.height) * 0.5;
     	headSizeBLabel.setText(HS_B_TEXT + headSizeB.int());
+    }
+    
+    function setSceenWidth(evt:Event = null):Void {
+    	screenWidth = screenWidthSlider.value;
     }
     
     function init(event:Event):Void {
@@ -118,27 +122,24 @@ class MotionParallaxDemo extends Sprite {
 		view3d = new View3D();
 		scene3d = view3d.scene;
 		camera3d = view3d.camera;
-		lens = new LensBase();
-		//camera3d.lens = lens;
+		camera3d.x = camera3d.y = camera3d.z = 0;
+		lens = new FreeMatrixLens();
+		camera3d.lens = lens;
 		
 		view3d.antiAlias = 4;
-		//view3d.backgroundColor = 0xFFFFFF;
 		
-		var m = new Mesh(new CubeGeometry(10, 10, 10), new ColorMaterial(0xFF0000));
+		var size = 0.1;
+		var m = new Mesh(new CubeGeometry(size, size, size), new ColorMaterial(0xFF0000));
 		for (i in 0...10)
 		for (j in 0...10) 
 		for (k in 0...10) 
 		{
 			m = cast m.clone();
-			m.moveTo(i.map(0, 10, -1000, 1000), j.map(0, 10, -1000, 1000), k.map(0, 10, 0, 1000));
+			m.moveTo(i.map(0, 10, -2, 2), j.map(0, 10, -2, 2), k.map(0, 10, 0, 2));
 			scene3d.addChild(m);
 		}
 		
 		addChild(view3d);
-//		addEventListener(Event.ENTER_FRAME, function(evt:Event):Void {
-//	    	view3d.render();
-//	    	m.rotationX++;
-//	    });
 		
    		
    		//init UI
@@ -151,10 +152,11 @@ class MotionParallaxDemo extends Sprite {
     	startBtn = new PushButton(this, 0, 0, "start (fullscreen)");
     	startBtn.addEventListener(MouseEvent.CLICK, start);
     	
-    	screenWidthSlider = new HUISlider(guiBox, 0, 0, "screen width");
+    	screenWidthSlider = new HUISlider(guiBox, 0, 0, "screen width", setSceenWidth);
     	screenWidthSlider.setMinimum(1);
     	screenWidthSlider.setMaximum(5);
     	screenWidthSlider.setValue(1.5);
+    	setSceenWidth();
     	
     	var hsA = new HBox(guiBox);
     	headSizeALabel = new Label(hsA, 0, 0, HS_A_TEXT);
@@ -212,12 +214,30 @@ class MotionParallaxDemo extends Sprite {
     		startDetection();
     	}
     	
-    	view3d.render();
+    	var screenHeight = screenWidth*stage.stageHeight/stage.stageWidth;
     	
-    	/*
-    	var mat = new Matrix3D();
-		Reflect.setField(lens, "_matrix", mat);
-		*/
+    	//screen's bottom left corner
+    	var pa = new Vector3D(0, 0, 0);
+    	
+    	//screen's bottom right corner
+    	var pb = new Vector3D(screenWidth, 0, 0);
+    	
+    	//screen's top left corner
+    	var pc = new Vector3D(0, screenHeight, 0);
+    	
+    	//head position
+    	var pe = new Vector3D(screenWidth*0.5, screenHeight*0.5, 10);
+    	
+    	//near clipping plane
+    	var n = 0.01;
+    	
+    	//far clipping plane
+    	var f = 100;
+    	
+    	
+    	lens.matrix = generalized_perspective_projection(pa, pb, pc, pe, n, f);
+    	
+    	view3d.render();
     }
     
     function onDetectionComplete(e:ObjectDetectorEvent):Void {
@@ -229,14 +249,18 @@ class MotionParallaxDemo extends Sprite {
     			headSizeBBtn.setEnabled(true);
 			}
 			
+			//choose the result that is closest to current headPos
 			var headPosCenter = new Point(headPos.x + headPos.width * 0.5, headPos.y + headPos.height * 0.5);
 			var targetPos = e.rects.fold(function(r:Rectangle, min:Array<Dynamic>){
 				var d = Point.distance(new Point(r.x + r.width * 0.5, r.y + r.height * 0.5), headPosCenter);
 				return d < min[1] ? [r, d] : min;
 			}, [null, Math.POSITIVE_INFINITY])[0];
+			
+			//smoothen the position
 			headPos.topLeft = Point.interpolate(headPos.topLeft, targetPos.topLeft, 0.5);
 			headPos.bottomRight = Point.interpolate(headPos.bottomRight, targetPos.bottomRight, 0.5);
 			
+			//draw all detection result
 			var g = faceRects.graphics;
 			g.clear();
 			g.lineStyle(1, 0x000000);
@@ -244,6 +268,7 @@ class MotionParallaxDemo extends Sprite {
 				g.drawRect(r.x, r.y, r.width, r.height);
 			}
 			
+			//draw headPos
 			g.lineStyle(2, 0xFF0000);
 			g.drawRect(headPos.x, headPos.y, headPos.width, headPos.height);
 		}
@@ -256,7 +281,7 @@ class MotionParallaxDemo extends Sprite {
 		detector.detect(bmpTarget);
 	}
     
-    function getDetectorOptions():ObjectDetectorOptions {
+    static function getDetectorOptions():ObjectDetectorOptions {
 		var options = new ObjectDetectorOptions();
 		options.minSize   = 50;
 		options.startx    = ObjectDetectorOptions.INVALID_POS;
@@ -278,30 +303,23 @@ class MotionParallaxDemo extends Sprite {
 	static public function generalized_perspective_projection(pa:Vector3D, pb:Vector3D, pc:Vector3D, pe:Vector3D, n:Float, f:Float):Matrix3D {
     
 	    //Compute an orthonormal basis for the screen.
-	    
 	    var vr = pb.subtract(pa);
 	    vr.normalize();
-	    
 	    var vu = pc.subtract(pa);
 	    vu.normalize();
-	    
 	    var vn = vr.crossProduct(vu);
 	    vn.normalize();
 	    
 	    //Compute the screen corner vectors.
-	    
 	    var va = pa.subtract(pe);
 	    var vb = pb.subtract(pe);
 	    var vc = pc.subtract(pe);
 	    
 	    //Find the distance from the eye to screen plane.
-	    
 	    var d = -(va.dotProduct(vn));
 	    
 	    //Find the extent of the perpendicular projection.
-	    
 	    var m = n / d;
-	    
 	    var l = vr.dotProduct(va) * m;
 	    var r = vr.dotProduct(vb) * m;
 	    var b = vu.dotProduct(va) * m;
@@ -312,13 +330,13 @@ class MotionParallaxDemo extends Sprite {
 	    var mat = new Matrix3D(flash.Vector.ofArray([2.0*n/(r-l), 0, (r+l)/(r-l), 0, 0, 2.0*n/(t-b), (t+b)/(t-b), 0, 0, 0, (f+n)/(n-f), 2.0*f*n/(n-f), 0, 0, -1, 0]));
 	    
 	    //Rotate the projection to be non-perpendicular.
-	    
 	    mat.append(new Matrix3D(flash.Vector.ofArray([vr.x, vr.y, vr.z, 0, vu.x, vu.y, vu.z, 0, vn.x, vn.y, vn.z, 0, 0, 0, 0, 1])));
 	    
 	    //Move the apex of the frustum to the origin.
-	    
 	    mat.append(new Matrix3D(flash.Vector.ofArray([1, 0, 0, -pe.x, 0, 1, 0, -pe.y, 0, 0, 1, -pe.z, 0, 0, 0, 1])));
 	    
+	    
+	    mat.transpose();
 	    return mat;
     }
 }
