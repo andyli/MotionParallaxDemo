@@ -243,7 +243,7 @@ class MotionParallaxDemo extends Sprite {
     	
     	//head position
     	var pe = if (headPos == null || Math.isNaN(headSizeA) || Math.isNaN(headSizeB)) {
-    		new Vector3D(screenWidth*0.5, screenHeight*0.5, 10);
+    		new Vector3D(0, 0, 10);
     	} else {
     		var headSizeCur = (headPos.width + headPos.height) * 0.5;
     		headPos3d.z = (headSizeA*HS_A_DIST + headSizeB*HS_B_DIST)*0.5 / headSizeCur;
