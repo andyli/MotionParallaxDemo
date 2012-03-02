@@ -161,16 +161,15 @@ class MotionParallaxDemo extends Sprite {
 		headSizeA = 102;
 		headSizeB = 71;
 		
-		var geom = new CubeGeometry(0.001, 0.001, 0.1);
+		var geom = new CubeGeometry(0.002, 0.002, 0.1);
 		var m, material;
 		for (k in 0...10) {
-			var v = k.map(0, 10, 255, 0).int();
-			material = new ColorMaterial(ColorUtil.getColor(0,v,255));
-			for (i in 0...10)
-			for (j in 0...10) 
+			material = new ColorMaterial(ColorUtil.getColor(0, k.map(0, 10, 255, 0).int(), 255), Math.pow(k.map(0, 10, 1, 0), 0.8));
+			for (i in 0...6)
+			for (j in 0...6) 
 			{
 				m = new Mesh(geom, material);
-				m.moveTo(i.map(0, 10, -2, 2), j.map(0, 10, -2, 2), k.map(0, 10, -0.05, -2));
+				m.moveTo(i.map(0, 5, -1, 1), j.map(0, 5, -1, 1), k.map(0, 10, -0.05, -2));
 				scene3d.addChild(m);
 			}
 		}
@@ -331,8 +330,8 @@ class MotionParallaxDemo extends Sprite {
 			}, [null, Math.POSITIVE_INFINITY])[0];
 			
 			//smoothen the position
-			headPos.topLeft = Point.interpolate(headPos.topLeft, targetPos.topLeft, 0.5);
-			headPos.bottomRight = Point.interpolate(headPos.bottomRight, targetPos.bottomRight, 0.5);
+			headPos.topLeft = Point.interpolate(headPos.topLeft, targetPos.topLeft, 0.7);
+			headPos.bottomRight = Point.interpolate(headPos.bottomRight, targetPos.bottomRight, 0.7);
 			
 			//draw all detection result
 			var g = faceRects.graphics;
