@@ -69,6 +69,8 @@ class MotionParallaxDemo extends Sprite {
 	var bmpTarget:Bitmap;
 	var isDetecting:Bool;
 	
+	var bm:BlockMatching;
+	
 	var screenWidth:Float;
 	var headSize:Float;
 	var headSizeA:Float;
@@ -204,7 +206,7 @@ class MotionParallaxDemo extends Sprite {
 		
 		detector = new MyObjectDetector();
 		detector.options = getDetectorOptions();
-		detector.loadHaarCascadesFromXml(haxe.Resource.getString("haarcascade"));
+		detector.loadHaarCascadesFromXml(nme.Assets.getText("assets/haarcascade_frontalface_alt.xml"));
 		detector.addEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, onDetectionComplete);
 		
 		bmpTarget = new Bitmap(new BitmapData(CAM_W, CAM_H, false));

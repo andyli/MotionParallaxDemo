@@ -15,7 +15,6 @@
 	<compilerflag name="-swf-lib Away3d-core-fp11.swf" />
 	<haxelib name="casalib" />
 	<haxelib name="nme" />
-	<compilerflag name="-resource haarcascades/haarcascade_frontalface_alt.xml@haarcascade" />
 	
 	<assets path="assets" rename="assets" include="*" />
 </project>

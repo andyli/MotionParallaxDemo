@@ -1,17 +1,18 @@
 # don't use this one, use build.nmml instead:
 # haxelib run nme test build.nmml flash
 
--swf bin/MotionParallaxDemo.swf
--swf-version 11.1
--swf-header 640:480:24:FFFFFF
--main MotionParallaxDemo
+-main MotionParallaxDemo 
+-D nme_install_tool
 -cp src
 # https://github.com/Beeblerox/MinimalCompsHX/
 -cp ../../repo/MinimalCompsHX/Source
 -swf-lib Away3d-core-fp11.swf
 -lib casalib
 -lib nme
--resource haarcascades/haarcascade_frontalface_alt.xml@haarcascade
--debug
+-D web
+-swf-version 11.1
+-swf9 bin/flash/bin/MotionParallaxDemo.swf
+-swf-header 640:480:24:000000
+-cp bin/flash/haxe
 
 -cmd open bin/MotionParallaxDemo.swf

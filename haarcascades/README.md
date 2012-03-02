@@ -1,1 +1,0 @@
-From [OpenCV](http://opencv.willowgarage.com/).
