@@ -13,12 +13,15 @@ import flash.events.KeyboardEvent;
 import flash.geom.Point;
 import flash.geom.Vector3D;
 import flash.geom.Rectangle;
+import flash.geom.Matrix;
 import flash.geom.Matrix3D;
 import flash.media.Camera;
 import flash.media.Video;
+import jp.maaash.objectdetection.ObjectDetector;
 import jp.maaash.objectdetection.ObjectDetectorOptions;
 import jp.maaash.objectdetection.ObjectDetectorEvent;
 import com.bit101.components.PushButton;
+import com.bit101.components.CheckBox;
 import com.bit101.components.HUISlider;
 import com.bit101.components.VBox;
 import com.bit101.components.HBox;
@@ -30,7 +33,12 @@ import away3d.cameras.Camera3D;
 import away3d.cameras.lenses.FreeMatrixLens;
 import away3d.entities.Mesh;
 import away3d.primitives.CubeGeometry;
+import away3d.primitives.PlaneGeometry;
 import away3d.materials.ColorMaterial;
+import away3d.materials.lightpickers.StaticLightPicker;
+import away3d.lights.DirectionalLight;
+import away3d.lights.PointLight;
+import org.casalib.util.ColorUtil;
 
 using Std;
 using Lambda;
@@ -47,13 +55,17 @@ class MotionParallaxDemo extends Sprite {
 	inline static var HS_A_TEXT = "head size at distance "+HS_A_DIST+": ";
 	inline static var HS_B_TEXT = "head size at distance "+HS_B_DIST+": ";
 	
+	var frame:Int;
+	
 	var camera:Camera;
 	var video:Video;
 	var faceRects:Sprite;
 	var videoHolder:Sprite;
+	var flipCamMat:Matrix;
 	
 	var startBtn:PushButton;
 	var screenWidthSlider:HUISlider;
+	var flipCamBtn:CheckBox;
 	var headSizeSlider:HUISlider;
 	var headSizeALabel:Label;
 	var headSizeABtn:PushButton;
@@ -64,8 +76,10 @@ class MotionParallaxDemo extends Sprite {
 	var view3d:View3D;
 	var camera3d:Camera3D;
 	var lens:FreeMatrixLens;
+	var lightpicker:StaticLightPicker;
+	var cube:Mesh;
 	
-	var detector:MyObjectDetector;
+	var detector:ObjectDetector;
 	var bmpTarget:Bitmap;
 	var isDetecting:Bool;
 	
@@ -88,9 +102,6 @@ class MotionParallaxDemo extends Sprite {
     	if (stage.displayState != StageDisplayState.FULL_SCREEN) {
     		startBtn.setVisible(true);
     	}
-    	
-    	videoHolder.x = (stage.stageWidth - CAM_W * videoHolder.scaleX) * 0.5;
-    	videoHolder.y = 0;
     	
     	view3d.width = stage.stageWidth;
     	view3d.height = stage.stageHeight;
@@ -124,15 +135,25 @@ class MotionParallaxDemo extends Sprite {
     function init(event:Event):Void {
     	removeEventListener(Event.ADDED_TO_STAGE, init);
     	
+    	frame = 0;
     	
     	//init 3d
 		
 		view3d = new View3D();
 		scene3d = view3d.scene;
+		
 		camera3d = view3d.camera;
-		camera3d.x = camera3d.y = camera3d.z = 0;
+		camera3d.moveTo(0, 0, 0);
 		lens = new FreeMatrixLens();
 		camera3d.lens = lens;
+		
+		var light = new DirectionalLight();
+		scene3d.addChild(light);
+		var plight = new PointLight();
+		plight.moveTo(-2, 2, 10);
+		scene3d.addChild(plight);
+		
+		lightpicker = new StaticLightPicker([light, plight]);
 		
 		view3d.antiAlias = 4;
 		
@@ -140,29 +161,73 @@ class MotionParallaxDemo extends Sprite {
 		headSizeA = 102;
 		headSizeB = 71;
 		
-		var size = 0.1;
-		var geom = new CubeGeometry(0.001, 0.001, size);
-		var m;
+		var geom = new CubeGeometry(0.001, 0.001, 0.1);
+		var m, material;
 		for (k in 0...10) {
-			var material = new ColorMaterial(0xFF0000, k.map(0, 10, 1, 0));
+			var v = k.map(0, 10, 255, 0).int();
+			material = new ColorMaterial(ColorUtil.getColor(0,v,255));
 			for (i in 0...10)
 			for (j in 0...10) 
 			{
 				m = new Mesh(geom, material);
-				m.moveTo(i.map(0, 10, -2, 2), j.map(0, 10, -2, 2), k.map(0, 10, 0, -2));
+				m.moveTo(i.map(0, 10, -2, 2), j.map(0, 10, -2, 2), k.map(0, 10, -0.05, -2));
 				scene3d.addChild(m);
 			}
 		}
 		
+		material = new ColorMaterial(0xFF0000);
+		material.lightPicker = lightpicker;
+		cube = new Mesh(new CubeGeometry(0.1, 0.1, -0.1), material);
+		cube.moveTo(-0.1, 0.13, 0.5);
+		cube.rotationX = 45;
+		cube.rotationY = 45;
+		cube.rotationZ = 45;
+		scene3d.addChild(cube);
+		
+		material = new ColorMaterial(0x000000, 0.5);
+		var plane = new Mesh(new CubeGeometry(4, 4, 0.001), material);
+		scene3d.addChild(plane);
+		
 		addChild(view3d);
+    	
+    	
+    	//init webcam
+    	
+    	videoHolder = new Sprite();
+		videoHolder.scaleX = videoHolder.scaleY = 0.5;
+		videoHolder.x = 5;
+		videoHolder.y = 5;
+		addChild(videoHolder);
+		
+		video = new Video(CAM_W, CAM_H);
+		
+		bmpTarget = new Bitmap(new BitmapData(CAM_W, CAM_H, false));
+		videoHolder.addChild(bmpTarget);
+		
+		faceRects = new Sprite();
+		videoHolder.addChild(faceRects);
+		
+		flipCamMat = new Matrix();
+		flipCamMat.scale(-1, 1);
+		flipCamMat.translate(CAM_W, 0);
+		
+		//init face dectector
+		
+		detector = new ObjectDetector();
+		detector.options = getDetectorOptions();
+		detector.loadHaarCascadesFromXml(Xml.parse(nme.Assets.getText("assets/haarcascade_frontalface_alt.xml")));
+		detector.addEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, onDetectionComplete);
 		
    		
    		//init UI
    		
-   		var guiBox = new MyVBox(this, 5, 5);
-   		
     	startBtn = new PushButton(this, 0, 0, "start (fullscreen)");
     	startBtn.addEventListener(MouseEvent.CLICK, start);
+    	
+   		var guiBox = new MyVBox(this, 5, 10 + videoHolder.y + CAM_H * videoHolder.scaleY);
+   		
+   		flipCamBtn = new CheckBox(guiBox, 0, 0, "flip camera");
+   		flipCamBtn.setSelected(true);
     	
     	screenWidthSlider = new HUISlider(guiBox, 0, 0, "screen width", setSceenWidth);
     	screenWidthSlider.setMinimum(1);
@@ -188,29 +253,6 @@ class MotionParallaxDemo extends Sprite {
     	headSizeBBtn.setSize(30, 18);
     	headSizeBBtn.setEnabled(false);
     	
-    	
-    	//init webcam
-    	
-    	videoHolder = new Sprite();
-		videoHolder.scaleX = videoHolder.scaleY = 0.5;
-		addChild(videoHolder);
-		
-		video = new Video(CAM_W, CAM_H);
-		videoHolder.addChild(video);
-		
-		faceRects = new Sprite();
-		videoHolder.addChild(faceRects);
-		
-		
-		//init face dectector
-		
-		detector = new MyObjectDetector();
-		detector.options = getDetectorOptions();
-		detector.loadHaarCascadesFromXml(nme.Assets.getText("assets/haarcascade_frontalface_alt.xml"));
-		detector.addEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, onDetectionComplete);
-		
-		bmpTarget = new Bitmap(new BitmapData(CAM_W, CAM_H, false));
-		
 		
     	onResize();
     	stage.addEventListener(Event.RESIZE, onResize);
@@ -250,7 +292,7 @@ class MotionParallaxDemo extends Sprite {
     		var headSizeCur = (headPos.width + headPos.height) * 0.5;
     		headPos3d.z = (headSizeA*HS_A_DIST + headSizeB*HS_B_DIST)*0.5 / headSizeCur;
     		var headPosCenter = new Point(headPos.x + headPos.width * 0.5 - CAM_W * 0.5, headPos.y + headPos.height * 0.5 - CAM_H * 0.5);
-    		headPos3d.x = -headPosCenter.x * headSize/headSizeCur;
+    		headPos3d.x = headPosCenter.x * headSize/headSizeCur;
     		headPos3d.y = -headPosCenter.y * headSize/headSizeCur;
     		headPos3d;
     	}
@@ -264,7 +306,12 @@ class MotionParallaxDemo extends Sprite {
     	
     	lens.matrix = generalized_perspective_projection(pa, pb, pc, pe, n, f);
     	
+    	cube.roll(1);
+    	cube.z = Math.sin(frame/(24*2)) * 0.5;
+    	
     	view3d.render();
+    	
+    	++frame;
     }
     
     function onDetectionComplete(e:ObjectDetectorEvent):Void {
@@ -304,7 +351,12 @@ class MotionParallaxDemo extends Sprite {
     
     function startDetection():Void {
     	isDetecting = true;
-		bmpTarget.bitmapData.draw(video);
+    	
+    	if (flipCamBtn.getSelected())
+			bmpTarget.bitmapData.draw(video, flipCamMat);
+		else
+			bmpTarget.bitmapData.draw(video);
+		
 		detector.detect(bmpTarget);
 	}
     

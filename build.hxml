@@ -4,8 +4,8 @@
 -main MotionParallaxDemo 
 -D nme_install_tool
 -cp src
-# https://github.com/Beeblerox/MinimalCompsHX/
 -cp ../../repo/MinimalCompsHX/Source
+-cp ../andy-hxmarilena/src
 -swf-lib Away3d-core-fp11.swf
 -lib casalib
 -lib nme
