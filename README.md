@@ -8,4 +8,5 @@ Can be viewed at http://andyli.github.com/MotionParallaxDemo/.
 * [NME](http://www.haxenme.org/)
 * [Away3D](http://www.away3d.com/) (modified, compiled as _Away3d-core-fp11.swf_)
 * hxmarilena([fork](http://code.google.com/r/andy-hxmarilena/))
+* [MinimalCompsHX](https://github.com/Beeblerox/MinimalCompsHX/)
 * [casahx](https://github.com/andyli/casahx)
