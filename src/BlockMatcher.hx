@@ -12,7 +12,7 @@ using org.casalib.util.ColorUtil;
  *     Motion Compensated Frame Interpolation by new Block-based Motion Estimation Algorithm
  *     Taehyeun Ha, Member, IEEE, Seongjoo Lee and Jaeseok Kim, Member, IEEE
  */
-class BlockMatching {	
+class BlockMatcher {	
 	/**
 	 * Size of estimation block.
 	 */
@@ -70,7 +70,7 @@ class BlockMatching {
 		return 0.3 * (hex >> 16 & 0xFF) + 0.59 * (hex >> 8 & 0xFF) + 0.11 * (hex & 0xFF);
 	}
 	
-	public function process(img0:BitmapData, img0Pt:Point, img1:BitmapData, img1Pt:Point):Vector3D
+	public function process(img0:BitmapData, img1:BitmapData, img0Pt:Point):Vector3D
 	{
 		//var t = Timer.stamp();
 		

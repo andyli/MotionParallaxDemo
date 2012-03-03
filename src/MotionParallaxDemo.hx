@@ -3,6 +3,7 @@ package;
 import flash.Lib;
 import flash.display.Bitmap;
 import flash.display.BitmapData;
+import flash.display.GradientType;
 import flash.display.StageAlign;
 import flash.display.StageScaleMode;
 import flash.display.StageDisplayState;
@@ -32,6 +33,7 @@ import away3d.containers.View3D;
 import away3d.cameras.Camera3D;
 import away3d.cameras.lenses.FreeMatrixLens;
 import away3d.entities.Mesh;
+import away3d.containers.ObjectContainer3D;
 import away3d.primitives.CubeGeometry;
 import away3d.primitives.PlaneGeometry;
 import away3d.materials.ColorMaterial;
@@ -60,10 +62,11 @@ class MotionParallaxDemo extends Sprite {
 	var camera:Camera;
 	var video:Video;
 	var faceRects:Sprite;
+	var trackRects:Sprite;
 	var videoHolder:Sprite;
 	var flipCamMat:Matrix;
 	
-	var startBtn:PushButton;
+	var startFullBtn:PushButton;
 	var screenWidthSlider:HUISlider;
 	var flipCamBtn:CheckBox;
 	var headSizeSlider:HUISlider;
@@ -78,12 +81,13 @@ class MotionParallaxDemo extends Sprite {
 	var lens:FreeMatrixLens;
 	var lightpicker:StaticLightPicker;
 	var cube:Mesh;
+	var bgHolder:ObjectContainer3D;
 	
 	var detector:ObjectDetector;
+	var bmpTargetPrev:Bitmap;
 	var bmpTarget:Bitmap;
-	var isDetecting:Bool;
 	
-	var bm:BlockMatching;
+	var blockmatcher:BlockMatcher;
 	
 	var screenWidth:Float;
 	var headSize:Float;
@@ -100,14 +104,14 @@ class MotionParallaxDemo extends Sprite {
     
     function onResize(evt:Event = null):Void {
     	if (stage.displayState != StageDisplayState.FULL_SCREEN) {
-    		startBtn.setVisible(true);
+	    	screenWidthSlider.setValue(0.6);
+    	} else {
+	    	screenWidthSlider.setValue(1.5);
     	}
+    	setSceenWidth();
     	
     	view3d.width = stage.stageWidth;
     	view3d.height = stage.stageHeight;
-    	
-    	startBtn.x = (stage.stageWidth - startBtn.getWidth()) * 0.5;
-    	startBtn.y = (stage.stageHeight - startBtn.getHeight()) * 0.5;
     }
     
     function setHeadSizeA(evt:Event = null):Void {
@@ -126,10 +130,29 @@ class MotionParallaxDemo extends Sprite {
     
     function setSceenWidth(evt:Event = null):Void {
     	screenWidth = screenWidthSlider.value;
+    	initBg();
     }
     
     function setHeadSize(evt:Event = null):Void {
     	headSize = headSizeSlider.value;
+    }
+    
+    function initBg():Void {
+    	for (i in 0...bgHolder.numChildren) {
+			bgHolder.removeChild(bgHolder.getChildAt(0));
+		}
+		var geom = new CubeGeometry(0.002, 0.002, screenWidth*0.1);
+		var m, material;
+		for (k in 0...10) {
+			material = new ColorMaterial(ColorUtil.getColor(0, k.map(0, 10, 255, 0).int(), 255), Math.pow(k.map(0, 10, 1, 0), 0.8));
+			for (i in 0...6)
+			for (j in 0...6) 
+			{
+				m = new Mesh(geom, material);
+				m.moveTo(i.map(0, 5, -screenWidth*0.5, screenWidth*0.5), j.map(0, 5, -screenWidth*0.5, screenWidth*0.5), k.map(0, 10, -0.05, -screenWidth*1.5));
+				bgHolder.addChild(m);
+			}
+		}
     }
     
     function init(event:Event):Void {
@@ -158,26 +181,16 @@ class MotionParallaxDemo extends Sprite {
 		view3d.antiAlias = 4;
 		
 		headPos3d = new Vector3D();
-		headSizeA = 102;
-		headSizeB = 71;
+		headSizeA = 100;
+		headSizeB = 70;
 		
-		var geom = new CubeGeometry(0.002, 0.002, 0.1);
-		var m, material;
-		for (k in 0...10) {
-			material = new ColorMaterial(ColorUtil.getColor(0, k.map(0, 10, 255, 0).int(), 255), Math.pow(k.map(0, 10, 1, 0), 0.8));
-			for (i in 0...6)
-			for (j in 0...6) 
-			{
-				m = new Mesh(geom, material);
-				m.moveTo(i.map(0, 5, -1, 1), j.map(0, 5, -1, 1), k.map(0, 10, -0.05, -2));
-				scene3d.addChild(m);
-			}
-		}
+		bgHolder = new ObjectContainer3D();
+		scene3d.addChild(bgHolder);
+		initBg();
 		
-		material = new ColorMaterial(0xFF0000);
+		var material = new ColorMaterial(0xFF0000);
 		material.lightPicker = lightpicker;
 		cube = new Mesh(new CubeGeometry(0.1, 0.1, -0.1), material);
-		cube.moveTo(-0.1, 0.13, 0.5);
 		cube.rotationX = 45;
 		cube.rotationY = 45;
 		cube.rotationZ = 45;
@@ -200,11 +213,15 @@ class MotionParallaxDemo extends Sprite {
 		
 		video = new Video(CAM_W, CAM_H);
 		
+		bmpTargetPrev = new Bitmap(new BitmapData(CAM_W, CAM_H, false));
 		bmpTarget = new Bitmap(new BitmapData(CAM_W, CAM_H, false));
 		videoHolder.addChild(bmpTarget);
 		
 		faceRects = new Sprite();
 		videoHolder.addChild(faceRects);
+		
+		trackRects = new Sprite();
+		videoHolder.addChild(trackRects);
 		
 		flipCamMat = new Matrix();
 		flipCamMat.scale(-1, 1);
@@ -215,51 +232,51 @@ class MotionParallaxDemo extends Sprite {
 		detector = new ObjectDetector();
 		detector.options = getDetectorOptions();
 		detector.loadHaarCascadesFromXml(Xml.parse(nme.Assets.getText("assets/haarcascade_frontalface_alt.xml")));
-		detector.addEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, onDetectionComplete);
+		
+		//init blockmatcher
+		
+		blockmatcher = new BlockMatcher().init(40, 5, 40, 0.005);
 		
    		
    		//init UI
-   		
-    	startBtn = new PushButton(this, 0, 0, "start (fullscreen)");
-    	startBtn.addEventListener(MouseEvent.CLICK, start);
     	
-   		var guiBox = new MyVBox(this, 5, 10 + videoHolder.y + CAM_H * videoHolder.scaleY);
+   		var guiBox = new MyVBox(this, 10, 10 + videoHolder.y + CAM_H * videoHolder.scaleY);
    		
    		flipCamBtn = new CheckBox(guiBox, 0, 0, "flip camera");
    		flipCamBtn.setSelected(true);
     	
     	screenWidthSlider = new HUISlider(guiBox, 0, 0, "screen width", setSceenWidth);
-    	screenWidthSlider.setMinimum(1);
+    	screenWidthSlider.setMinimum(0.5);
     	screenWidthSlider.setMaximum(5);
-    	screenWidthSlider.setValue(1.5);
     	setSceenWidth();
     	
     	headSizeSlider = new HUISlider(guiBox, 0, 0, "head size", setHeadSize);
     	headSizeSlider.setMinimum(0.1);
     	headSizeSlider.setMaximum(2);
-    	headSizeSlider.setValue(0.8);
+    	headSizeSlider.setValue(0.5);
     	setHeadSize();
     	
     	var hsA = new HBox(guiBox);
-    	headSizeALabel = new Label(hsA, 0, 0, HS_A_TEXT);
+    	headSizeALabel = new Label(hsA, 0, 0, HS_A_TEXT + headSizeA.int() + "px");
     	headSizeABtn = new PushButton(hsA, 0, 0, "get", setHeadSizeA);
     	headSizeABtn.setSize(30, 18);
     	headSizeABtn.setEnabled(false);
+    	setHeadSizeA();
     	
     	var hsB = new HBox(guiBox);
-    	headSizeBLabel = new Label(hsB, 0, 0, HS_B_TEXT);
+    	headSizeBLabel = new Label(hsB, 0, 0, HS_B_TEXT + headSizeB.int() + "px");
     	headSizeBBtn = new PushButton(hsB, 0, 0, "get", setHeadSizeB);
     	headSizeBBtn.setSize(30, 18);
     	headSizeBBtn.setEnabled(false);
+    	setHeadSizeB();
+   		
+    	startFullBtn = new PushButton(guiBox, 0, 0, "fullscreen");
+    	startFullBtn.addEventListener(MouseEvent.CLICK, startFull);
     	
 		
     	onResize();
     	stage.addEventListener(Event.RESIZE, onResize);
-    }
-    
-    function start(evt:MouseEvent):Void {
-    	startBtn.setVisible(false);
-    	stage.displayState = StageDisplayState.FULL_SCREEN;
+    	
     	
     	camera = Camera.getCamera();
     	camera.setMode(CAM_W, CAM_H, 24);
@@ -268,10 +285,121 @@ class MotionParallaxDemo extends Sprite {
 		addEventListener(Event.ENTER_FRAME, onEnterFrame);
     }
     
+    function startFull(evt:MouseEvent):Void {
+    	stage.displayState = StageDisplayState.FULL_SCREEN;
+    }
+    
     function onEnterFrame(evt:Event):Void {
-    	if (!isDetecting) {
-    		startDetection();
+    	bmpTargetPrev.bitmapData.copyPixels(bmpTarget.bitmapData, bmpTarget.bitmapData.rect, new Point());
+    	
+    	if (flipCamBtn.getSelected())
+			bmpTarget.bitmapData.draw(video, flipCamMat);
+    	else
+    		bmpTarget.bitmapData.draw(video);
+    	
+    	
+    	var trackRect = null;
+    	if (headPos != null) {
+    		var offset = 1/4;
+    		var tl = headPos.topLeft;
+    		var p00 = tl.add(new Point(headPos.width * offset, headPos.height * offset));
+    		var p10 = tl.add(new Point(headPos.width * (1-offset), headPos.height * offset));
+    		var p01 = tl.add(new Point(headPos.width * offset, headPos.height * (1-offset)));
+    		var p11 = tl.add(new Point(headPos.width * (1-offset), headPos.height * (1-offset)));
+    		
+    		var v00 = blockmatcher.process(bmpTargetPrev.bitmapData, bmpTarget.bitmapData, p00);
+    		var v10 = blockmatcher.process(bmpTargetPrev.bitmapData, bmpTarget.bitmapData, p10);
+    		var v01 = blockmatcher.process(bmpTargetPrev.bitmapData, bmpTarget.bitmapData, p01);
+    		var v11 = blockmatcher.process(bmpTargetPrev.bitmapData, bmpTarget.bitmapData, p11);
+    		
+    		var c00 = new Point(p00.x - v00.x, p00.y - v00.y);
+    		var c10 = new Point(p10.x - v10.x, p10.y - v10.y);
+    		var c01 = new Point(p01.x - v01.x, p01.y - v01.y);
+    		var c11 = new Point(p11.x - v11.x, p11.y - v11.y);
+    		
+    		
+    		var center = c00.add(c10).add(c01).add(c11);
+    		center.x *= 0.25;
+    		center.y *= 0.25;
+    		
+    		var w = ((c10.x - c00.x) + (c11.x - c01.x)) * 0.5 / (offset*2);
+    		var h = ((c01.y - c00.y) + (c11.y - c10.y)) * 0.5 / (offset*2);
+    		
+    		trackRect = new Rectangle(center.x - w * 0.5, center.y - h * 0.5, w, h);
+    		
+    		
+    		var g = trackRects.graphics;
+    		g.clear();
+    		g.lineStyle(2);
+    		g.lineGradientStyle(GradientType.LINEAR, [0xFFFFFF, 0x00FF00], [1.0, 1.0], [0, 255]);
+    		g.moveTo(p00.x, p00.y);
+    		g.lineTo(c00.x, c00.y);
+    		g.drawCircle(c00.x, c00.y, 4);
+    		g.moveTo(p10.x, p10.y);
+    		g.lineTo(c10.x, c10.y);
+    		g.drawCircle(c10.x, c10.y, 4);
+    		g.moveTo(p01.x, p01.y);
+    		g.lineTo(c01.x, c01.y);
+    		g.drawCircle(c01.x, c01.y, 4);
+    		g.moveTo(p11.x, p11.y);
+    		g.lineTo(c11.x, c11.y);
+    		g.drawCircle(c11.x, c11.y, 4);
+    		
+    		g.drawRect(trackRect.x, trackRect.y, trackRect.width, trackRect.height);
     	}
+    	
+    	var rects = detector.detect(bmpTarget);
+		var detectRect = null;
+		if ( rects != null && rects.length > 0) {
+			if (headPos == null) {
+				headPos = rects[0];
+				
+    			headSizeABtn.setEnabled(true);
+    			headSizeBBtn.setEnabled(true);
+			}
+			
+			//choose the result that is closest to current headPos
+			var headPosCenter = new Point(headPos.x + headPos.width * 0.5, headPos.y + headPos.height * 0.5);
+			detectRect = rects.fold(function(r:Rectangle, min:Array<Dynamic>){
+				var d = Point.distance(new Point(r.x + r.width * 0.5, r.y + r.height * 0.5), headPosCenter);
+				return d < min[1] ? [r, d] : min;
+			}, [null, Math.POSITIVE_INFINITY])[0];
+			
+			//draw all detection result
+			var g = faceRects.graphics;
+			g.clear();
+			g.lineStyle(1, 0x110000);
+			for (r in rects) {
+				g.drawRect(r.x, r.y, r.width, r.height);
+			}
+			
+			//draw detectRect
+			g.lineStyle(2, 0xFF0000);
+			g.drawRect(detectRect.x, detectRect.y, detectRect.width, detectRect.height);
+		}
+		if (detectRect == null) {
+			faceRects.graphics.clear();
+		}
+		
+		
+		if (detectRect != null && trackRect == null) {
+			headPos.topLeft = Point.interpolate(headPos.topLeft, detectRect.topLeft, 0.7);
+			headPos.bottomRight = Point.interpolate(headPos.bottomRight, detectRect.bottomRight, 0.7);
+		} else if (detectRect == null && trackRect != null) {
+			headPos.topLeft = Point.interpolate(headPos.topLeft, trackRect.topLeft, 0.7);
+			headPos.bottomRight = Point.interpolate(headPos.bottomRight, trackRect.bottomRight, 0.7);
+		} else if (detectRect != null && trackRect != null) {
+			headPos.topLeft = Point.interpolate(headPos.topLeft, Point.interpolate(detectRect.topLeft, trackRect.topLeft, 0.5), 0.5);
+			headPos.bottomRight = Point.interpolate(headPos.bottomRight, Point.interpolate(detectRect.bottomRight, trackRect.bottomRight, 0.5), 0.5);
+		}
+		
+		
+		if (headPos != null) {
+			var g = trackRects.graphics;
+			g.lineStyle(2, 0xFFFFFF);
+			g.drawRect(headPos.x, headPos.y, headPos.width, headPos.height);
+		}
+		
     	
     	var screenHeight = screenWidth*stage.stageHeight/stage.stageWidth;
     	
@@ -286,7 +414,7 @@ class MotionParallaxDemo extends Sprite {
     	
     	//head position
     	var pe = if (headPos == null || Math.isNaN(headSizeA) || Math.isNaN(headSizeB)) {
-    		new Vector3D(0, 0, 10);
+    		new Vector3D(0, 0, 2);
     	} else {
     		var headSizeCur = (headPos.width + headPos.height) * 0.5;
     		headPos3d.z = (headSizeA*HS_A_DIST + headSizeB*HS_B_DIST)*0.5 / headSizeCur;
@@ -312,52 +440,6 @@ class MotionParallaxDemo extends Sprite {
     	
     	++frame;
     }
-    
-    function onDetectionComplete(e:ObjectDetectorEvent):Void {
-		if ( e.rects != null && e.rects.length > 0) {
-			if (headPos == null) {
-				headPos = e.rects[0];
-				
-    			headSizeABtn.setEnabled(true);
-    			headSizeBBtn.setEnabled(true);
-			}
-			
-			//choose the result that is closest to current headPos
-			var headPosCenter = new Point(headPos.x + headPos.width * 0.5, headPos.y + headPos.height * 0.5);
-			var targetPos = e.rects.fold(function(r:Rectangle, min:Array<Dynamic>){
-				var d = Point.distance(new Point(r.x + r.width * 0.5, r.y + r.height * 0.5), headPosCenter);
-				return d < min[1] ? [r, d] : min;
-			}, [null, Math.POSITIVE_INFINITY])[0];
-			
-			//smoothen the position
-			headPos.topLeft = Point.interpolate(headPos.topLeft, targetPos.topLeft, 0.7);
-			headPos.bottomRight = Point.interpolate(headPos.bottomRight, targetPos.bottomRight, 0.7);
-			
-			//draw all detection result
-			var g = faceRects.graphics;
-			g.clear();
-			g.lineStyle(1, 0x000000);
-			for (r in e.rects) {
-				g.drawRect(r.x, r.y, r.width, r.height);
-			}
-			
-			//draw headPos
-			g.lineStyle(2, 0xFF0000);
-			g.drawRect(headPos.x, headPos.y, headPos.width, headPos.height);
-		}
-		isDetecting = false;
-	}
-    
-    function startDetection():Void {
-    	isDetecting = true;
-    	
-    	if (flipCamBtn.getSelected())
-			bmpTarget.bitmapData.draw(video, flipCamMat);
-		else
-			bmpTarget.bitmapData.draw(video);
-		
-		detector.detect(bmpTarget);
-	}
     
     static function getDetectorOptions():ObjectDetectorOptions {
 		var options = new ObjectDetectorOptions();
