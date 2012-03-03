@@ -61,8 +61,8 @@ class MotionParallaxDemo extends Sprite {
 	
 	var camera:Camera;
 	var video:Video;
-	var faceRects:Sprite;
-	var trackRects:Sprite;
+	var faceRectsSp:Sprite;
+	var trackRectSp:Sprite;
 	var videoHolder:Sprite;
 	var flipCamMat:Matrix;
 	
@@ -93,7 +93,7 @@ class MotionParallaxDemo extends Sprite {
 	var headSize:Float;
 	var headSizeA:Float;
 	var headSizeB:Float;
-	var headPos:Rectangle;
+	var headRect:Rectangle;
 	var headPos3d:Vector3D;
 	
     function new():Void {
@@ -117,14 +117,14 @@ class MotionParallaxDemo extends Sprite {
     function setHeadSizeA(evt:Event = null):Void {
     	if (!headSizeABtn.enabled) return;
     	
-    	headSizeA = (headPos.width + headPos.height) * 0.5;
+    	headSizeA = (headRect.width + headRect.height) * 0.5;
     	headSizeALabel.setText(HS_A_TEXT + headSizeA.int() + "px");
     }
     
     function setHeadSizeB(evt:Event = null):Void {
     	if (!headSizeBBtn.enabled) return;
     	
-    	headSizeB = (headPos.width + headPos.height) * 0.5;
+    	headSizeB = (headRect.width + headRect.height) * 0.5;
     	headSizeBLabel.setText(HS_B_TEXT + headSizeB.int() + "px");
     }
     
@@ -217,11 +217,11 @@ class MotionParallaxDemo extends Sprite {
 		bmpTarget = new Bitmap(new BitmapData(CAM_W, CAM_H, false));
 		videoHolder.addChild(bmpTarget);
 		
-		faceRects = new Sprite();
-		videoHolder.addChild(faceRects);
+		faceRectsSp = new Sprite();
+		videoHolder.addChild(faceRectsSp);
 		
-		trackRects = new Sprite();
-		videoHolder.addChild(trackRects);
+		trackRectSp = new Sprite();
+		videoHolder.addChild(trackRectSp);
 		
 		flipCamMat = new Matrix();
 		flipCamMat.scale(-1, 1);
@@ -299,13 +299,13 @@ class MotionParallaxDemo extends Sprite {
     	
     	
     	var trackRect = null;
-    	if (headPos != null) {
+    	if (headRect != null) {
     		var offset = 1/4;
-    		var tl = headPos.topLeft;
-    		var p00 = tl.add(new Point(headPos.width * offset, headPos.height * offset));
-    		var p10 = tl.add(new Point(headPos.width * (1-offset), headPos.height * offset));
-    		var p01 = tl.add(new Point(headPos.width * offset, headPos.height * (1-offset)));
-    		var p11 = tl.add(new Point(headPos.width * (1-offset), headPos.height * (1-offset)));
+    		var tl = headRect.topLeft;
+    		var p00 = tl.add(new Point(headRect.width * offset, headRect.height * offset));
+    		var p10 = tl.add(new Point(headRect.width * (1-offset), headRect.height * offset));
+    		var p01 = tl.add(new Point(headRect.width * offset, headRect.height * (1-offset)));
+    		var p11 = tl.add(new Point(headRect.width * (1-offset), headRect.height * (1-offset)));
     		
     		var v00 = blockmatcher.process(bmpTargetPrev.bitmapData, bmpTarget.bitmapData, p00);
     		var v10 = blockmatcher.process(bmpTargetPrev.bitmapData, bmpTarget.bitmapData, p10);
@@ -328,7 +328,7 @@ class MotionParallaxDemo extends Sprite {
     		trackRect = new Rectangle(center.x - w * 0.5, center.y - h * 0.5, w, h);
     		
     		
-    		var g = trackRects.graphics;
+    		var g = trackRectSp.graphics;
     		g.clear();
     		g.lineStyle(2);
     		g.lineGradientStyle(GradientType.LINEAR, [0xFFFFFF, 0x00FF00], [1.0, 1.0], [0, 255]);
@@ -351,22 +351,22 @@ class MotionParallaxDemo extends Sprite {
     	var rects = detector.detect(bmpTarget);
 		var detectRect = null;
 		if ( rects != null && rects.length > 0) {
-			if (headPos == null) {
-				headPos = rects[0];
+			if (headRect == null) {
+				headRect = rects[0];
 				
     			headSizeABtn.setEnabled(true);
     			headSizeBBtn.setEnabled(true);
 			}
 			
-			//choose the result that is closest to current headPos
-			var headPosCenter = new Point(headPos.x + headPos.width * 0.5, headPos.y + headPos.height * 0.5);
+			//choose the result that is closest to current headRect
+			var headRectCenter = new Point(headRect.x + headRect.width * 0.5, headRect.y + headRect.height * 0.5);
 			detectRect = rects.fold(function(r:Rectangle, min:Array<Dynamic>){
-				var d = Point.distance(new Point(r.x + r.width * 0.5, r.y + r.height * 0.5), headPosCenter);
+				var d = Point.distance(new Point(r.x + r.width * 0.5, r.y + r.height * 0.5), headRectCenter);
 				return d < min[1] ? [r, d] : min;
 			}, [null, Math.POSITIVE_INFINITY])[0];
 			
 			//draw all detection result
-			var g = faceRects.graphics;
+			var g = faceRectsSp.graphics;
 			g.clear();
 			g.lineStyle(1, 0x110000);
 			for (r in rects) {
@@ -378,26 +378,26 @@ class MotionParallaxDemo extends Sprite {
 			g.drawRect(detectRect.x, detectRect.y, detectRect.width, detectRect.height);
 		}
 		if (detectRect == null) {
-			faceRects.graphics.clear();
+			faceRectsSp.graphics.clear();
 		}
 		
 		
 		if (detectRect != null && trackRect == null) {
-			headPos.topLeft = Point.interpolate(headPos.topLeft, detectRect.topLeft, 0.7);
-			headPos.bottomRight = Point.interpolate(headPos.bottomRight, detectRect.bottomRight, 0.7);
+			headRect.topLeft = Point.interpolate(headRect.topLeft, detectRect.topLeft, 0.7);
+			headRect.bottomRight = Point.interpolate(headRect.bottomRight, detectRect.bottomRight, 0.7);
 		} else if (detectRect == null && trackRect != null) {
-			headPos.topLeft = Point.interpolate(headPos.topLeft, trackRect.topLeft, 0.7);
-			headPos.bottomRight = Point.interpolate(headPos.bottomRight, trackRect.bottomRight, 0.7);
+			headRect.topLeft = Point.interpolate(headRect.topLeft, trackRect.topLeft, 0.7);
+			headRect.bottomRight = Point.interpolate(headRect.bottomRight, trackRect.bottomRight, 0.7);
 		} else if (detectRect != null && trackRect != null) {
-			headPos.topLeft = Point.interpolate(headPos.topLeft, Point.interpolate(detectRect.topLeft, trackRect.topLeft, 0.5), 0.5);
-			headPos.bottomRight = Point.interpolate(headPos.bottomRight, Point.interpolate(detectRect.bottomRight, trackRect.bottomRight, 0.5), 0.5);
+			headRect.topLeft = Point.interpolate(headRect.topLeft, Point.interpolate(detectRect.topLeft, trackRect.topLeft, 0.5), 0.5);
+			headRect.bottomRight = Point.interpolate(headRect.bottomRight, Point.interpolate(detectRect.bottomRight, trackRect.bottomRight, 0.5), 0.5);
 		}
 		
 		
-		if (headPos != null) {
-			var g = trackRects.graphics;
+		if (headRect != null) {
+			var g = trackRectSp.graphics;
 			g.lineStyle(2, 0xFFFFFF);
-			g.drawRect(headPos.x, headPos.y, headPos.width, headPos.height);
+			g.drawRect(headRect.x, headRect.y, headRect.width, headRect.height);
 		}
 		
     	
@@ -413,14 +413,14 @@ class MotionParallaxDemo extends Sprite {
     	var pc = new Vector3D(-screenWidth*0.5, screenHeight*0.5, 0);
     	
     	//head position
-    	var pe = if (headPos == null || Math.isNaN(headSizeA) || Math.isNaN(headSizeB)) {
+    	var pe = if (headRect == null || Math.isNaN(headSizeA) || Math.isNaN(headSizeB)) {
     		new Vector3D(0, 0, 2);
     	} else {
-    		var headSizeCur = (headPos.width + headPos.height) * 0.5;
+    		var headSizeCur = (headRect.width + headRect.height) * 0.5;
     		headPos3d.z = (headSizeA*HS_A_DIST + headSizeB*HS_B_DIST)*0.5 / headSizeCur;
-    		var headPosCenter = new Point(headPos.x + headPos.width * 0.5 - CAM_W * 0.5, headPos.y + headPos.height * 0.5 - CAM_H * 0.5);
-    		headPos3d.x = headPosCenter.x * headSize/headSizeCur;
-    		headPos3d.y = -headPosCenter.y * headSize/headSizeCur;
+    		var headRectCenter = new Point(headRect.x + headRect.width * 0.5 - CAM_W * 0.5, headRect.y + headRect.height * 0.5 - CAM_H * 0.5);
+    		headPos3d.x = headRectCenter.x * headSize/headSizeCur;
+    		headPos3d.y = -headRectCenter.y * headSize/headSizeCur;
     		headPos3d;
     	}
     	
