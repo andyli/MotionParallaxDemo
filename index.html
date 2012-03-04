@@ -11,12 +11,27 @@
 			body {
 				background: #111;
 				text-align: center;
+			}
+			
+			a {
+				color: #CCF;
+			}
+			
+			h1, h2 {
 				color: #FFF;
 			}
+			
 			#MotionParallaxDemo {
 				width: 740px;
 				height: 480px;
 				margin: 0 auto;
+			}
+			
+			#description {
+				width: 740px;
+				margin: 0 auto;
+				text-align: left;
+				color: #999;
 			}
 		</style>
 	</head>
@@ -42,6 +57,33 @@
 				</object>
 				<!--<![endif]-->
 			</object>
+		</div>
+		<div id="description">
+			<h2>You need a camera to view this.</h2>
+			<p>Or you can check out the video I recorded at <a href="http://youtu.be/U6PePKJHOSw">youtube</a>.</p>
+			
+			<h2>Did't feel 3D...?</h2>
+			<p>
+				Try closing one of your eyes and then move you head slowing relative to the screen.
+			</p>
+			<p>
+				Check if the camera capture at the top-left corner acts like a mirror. Check the <i>flip camera</i> box if needed.
+			</p>
+			<p>
+				You can fine tune the system by the UIs below the camera view port. See details below.
+			</p>
+			
+			<h2>UIs and settings</h2>
+			<p>Red/black rectangles are the head-detection results. Green dots and rectangle is optical-flow tracking. White rectangle is the resulting head position.</p>
+			
+			<p><i>screen width</i> and <i>head size</i> is in the unit of size of your hand. Just to let you measure them easily.</p>
+			<p>
+				<i>head size at distance 2</i> and <i>head size at distance 3</i> is the detected head size in pixels. 
+				You can set them by placing your head 2 or 3 hands from the camera and click the <i>get</i> button.
+			</p>
+			
+			<h2>Find out more about it...</h2>
+			<p>from <a href="http://blog.onthewings.net/2012/03/04/head-tracking-motion-parallax-3d-in-haxe-flash">my blog post</a>.</p>
 		</div>
 	</body>
 </html>
