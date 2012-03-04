@@ -5,8 +5,6 @@ import flash.display.BitmapData;
 import flash.geom.Vector3D;
 import flash.geom.Point;
 
-using org.casalib.util.ColorUtil;
-
 /**
  * It implements the algorithm described in the paper:
  *     Motion Compensated Frame Interpolation by new Block-based Motion Estimation Algorithm

@@ -35,7 +35,6 @@ import away3d.cameras.lenses.FreeMatrixLens;
 import away3d.entities.Mesh;
 import away3d.containers.ObjectContainer3D;
 import away3d.primitives.CubeGeometry;
-import away3d.primitives.PlaneGeometry;
 import away3d.materials.ColorMaterial;
 import away3d.materials.lightpickers.StaticLightPicker;
 import away3d.lights.DirectionalLight;
@@ -44,7 +43,6 @@ import org.casalib.util.ColorUtil;
 
 using Std;
 using Lambda;
-using org.casalib.util.ConversionUtil;
 using org.casalib.util.NumberUtil;
 
 class MotionParallaxDemo extends Sprite {
