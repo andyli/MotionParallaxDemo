@@ -10,12 +10,14 @@
 	<classpath name="src" />
 	
 	<!-- https://github.com/Beeblerox/MinimalCompsHX/ -->
-	<classpath name="../../repo/MinimalCompsHX/Source" />
+	<classpath name="../MinimalCompsHX/Source" />
 	
 	<!-- http://code.google.com/r/andy-hxmarilena/ -->
 	<classpath name="../andy-hxmarilena/src" />
 	
-	<compilerflag name="-swf-lib Away3d-core-fp11.swf" />
+	<!-- http://away3d.com/download/ -->
+	<compilerflag name="-swf-lib away3d-core-fp11_4_0_9_gold.swc" />
+	
 	<haxelib name="casalib" />
 	<haxelib name="nme" />
 	
